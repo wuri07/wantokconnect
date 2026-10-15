@@ -3,6 +3,7 @@ services:
     name: wantokconnect
     runtime: node
     plan: free
+    rootDir: wantokconnect          # Tells Render to look inside your subfolder
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
