@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: wantokconnect
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: VITE_SUPABASE_URL          # needed at build time
+        value: https://rgoxjeqjoomgrqiomduv.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY     # needed at build time
+        sync: false
+      - key: DATABASE_URL               # transaction pooler string, port 6543
+        sync: false
+      - key: ADMIN_API_TOKEN
+        generateValue: true
+      - key: ID_PEPPER
+        generateValue: true
