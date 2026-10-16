@@ -2,7 +2,7 @@ import { sb } from './supabase.js';
 
 export const S = {
   user: null, ref: { regions: [], provinces: [], cities: [], cats: [] },
-  f: { reg: '', prov: '', cat: '' }, fo: false, posts: [], more: false,
+  f: { reg: '', prov: '', cat: '' }, q: '', fo: false, posts: [], more: false,
   view: { t: 'feed' }, dv: 'home', notifs: [], threads: [], unreadN: 0, unreadM: 0,
   conn: new Set(), myLocs: [], cp: { m: [] }, pp: { m: [] }, chat: null, fb: { rate: 0, sales: '', exp: '', imp: '', done: false },
   recovering: false, chs: [], refresh: () => {},

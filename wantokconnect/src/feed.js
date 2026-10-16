@@ -38,15 +38,17 @@ async function addFiles(k, images) {
 export async function loadFeed(reset = true) {
   const f = S.f; let q = sb.from('feed_posts').select('*').order('created_at', { ascending: false });
   if (f.reg) q = q.eq('region_id', f.reg); if (f.prov) q = q.eq('province_id', f.prov); if (f.cat) q = q.eq('category_id', f.cat);
+  const term = S.q.replace(/[,()%*\\:"]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);   // plain-text search across business, product, description, category and place
+  if (term) q = q.or(['author_name', 'product_name', 'content', 'category_name', 'location_label'].map(c => `${c}.ilike."*${term}*"`).join(','));
   const from = reset ? 0 : S.posts.length, { data, error } = await q.range(from, from + PAGE - 1);
   if (error) return toast(error.message);
   S.posts = reset ? data : [...S.posts, ...data]; S.more = data.length === PAGE; drawList();
 }
 export function renderFeedView() { $('#app').innerHTML = `<div id="cmp">${composer()}</div><div id="cnt"></div><div id="list"></div>`; drawMedia('cp'); drawList(); }
 export function drawList() {
-  const l = $('#list'); if (!l) return; const f = S.f, any = f.reg || f.prov || f.cat;
-  $('#cnt').innerHTML = `<div class="count"><span>${S.posts.length}${S.more ? '+' : ''} listing${S.posts.length === 1 ? '' : 's'}</span>${any ? '<button data-a="fclear">Clear filters</button>' : ''}</div>`;
-  l.innerHTML = (S.posts.map(card).join('') || '<p class="pad muted">No listings match. Try All Regions or All Categories.</p>') + (S.more ? '<div class="pad"><button class="btn line-o full" data-a="more">Load more</button></div>' : '');
+  const l = $('#list'); if (!l) return; const f = S.f, any = f.reg || f.prov || f.cat || S.q;
+  $('#cnt').innerHTML = `<div class="count"><span>${S.posts.length}${S.more ? '+' : ''} listing${S.posts.length === 1 ? '' : 's'}${S.q ? ' for "' + esc(S.q) + '"' : ''}</span>${any ? '<button data-a="fclear">Clear filters</button>' : ''}</div>`;
+  l.innerHTML = (S.posts.map(card).join('') || '<p class="pad muted">No listings match. Try different words or clear the filters.</p>') + (S.more ? '<div class="pad"><button class="btn line-o full" data-a="more">Load more</button></div>' : '');
 }
 function card(p) {
   const mine = p.user_id === S.user.id, cn = S.conn.has(p.user_id), M = p.media || [], im = M.filter(x => x.kind === 'image'), fl = M.filter(x => x.kind !== 'image');
@@ -63,7 +65,7 @@ function card(p) {
 }
 // Deep link: scroll to a post and highlight it, fetching it if it is not on the first page.
 export async function focusPost(id) {
-  S.f = { reg: '', prov: '', cat: '' }; await loadFeed(true);
+  S.f = { reg: '', prov: '', cat: '' }; S.q = ''; await loadFeed(true);
   if (!S.posts.some(p => p.id == id)) { const { data } = await sb.from('feed_posts').select('*').eq('id', id).maybeSingle(); if (data) { S.posts.unshift(data); drawList(); } else toast('That post is no longer available'); }
   const a = document.querySelector(`[data-pid="${id}"]`); if (a) { a.scrollIntoView({ block: 'center' }); a.classList.add('hl'); setTimeout(() => a.classList.remove('hl'), 2500); }
 }
