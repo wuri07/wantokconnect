@@ -3,7 +3,6 @@ services:
     name: wantokconnect
     runtime: node
     plan: free
-    rootDir: wantokconnect          # Tells Render to look inside your subfolder
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -17,6 +16,4 @@ services:
       - key: DATABASE_URL               # transaction pooler string, port 6543
         sync: false
       - key: ADMIN_API_TOKEN
-        generateValue: true
-      - key: ID_PEPPER
         generateValue: true

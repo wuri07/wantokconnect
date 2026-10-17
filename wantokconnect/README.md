@@ -52,7 +52,7 @@ cp .env.example .env        # then edit .env: paste VITE_SUPABASE_ANON_KEY
 npm install
 npm run dev                 # http://localhost:5173
 ```
-Production style: `npm run build && npm start` then open http://localhost:5173.
+Production style: `npm run build && npm start` then open http://localhost:3000.
 
 ## 3. Push to GitHub
 Create an **empty** repository on github.com (no README, no .gitignore), then from this folder:
