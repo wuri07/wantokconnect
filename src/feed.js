@@ -55,7 +55,7 @@ function card(p) {
   const wa = waLink(p.author_whatsapp, `Hi, I saw ${p.product_name || 'your post'} on WantokConnect.`);
   return `<article class="post" data-pid="${p.id}"><button data-a="prof|${p.user_id}" aria-label="Open ${esc(p.author_name)}">${avatar(p.author_pic, p.author_name)}</button><div class="grow">
    <div class="between" style="margin:0;align-items:flex-start"><div class="grow"><button class="b" data-a="prof|${p.user_id}">${esc(p.author_name)}</button>${p.author_verified ? vbadge : ''}<div class="sub">${esc(p.location_label)}</div></div>
-   ${mine ? '' : `<button class="chip ${cn ? 'tag' : ''}" style="${cn ? '' : 'border-color:var(--red);color:var(--red)'}" data-a="conn|${p.user_id}">${cn ? 'Connected' : 'Connect'}</button>`}</div>
+   ${mine ? `<button class="chip" style="border-color:var(--red);color:var(--red)" data-a="dpost|${p.id}" aria-label="Delete this post">Delete</button>` : `<button class="chip ${cn ? 'tag' : ''}" style="${cn ? '' : 'border-color:var(--red);color:var(--red)'}" data-a="conn|${p.user_id}">${cn ? 'Connected' : 'Connect'}</button>`}</div>
    ${im.length ? `<div class="media ${im.length > 1 ? 'm2' : ''}">${im.map((x, i) => `<img src="${esc(x.url)}" loading="lazy" alt="" class="${im.length > 2 && im.length % 2 && i === 0 ? 'span' : ''}">`).join('')}</div>` : ''}
    ${fl.map(x => `<a class="file" href="${esc(x.url)}" target="_blank" rel="noopener"><i>FILE</i><span>${esc(x.name)}</span><span class="muted tiny" style="flex:none">${kb(x.size)}</span></a>`).join('')}
    <p style="white-space:pre-wrap;word-break:break-word;margin:12px 0 0">${esc(p.content)}</p>
@@ -88,6 +88,12 @@ export function openPostSheet(pr) {
 
 export const feedActions = {
   more: () => loadFeed(false),
+  // Delete one of your own posts. The item stays in your catalog so you can post it again later.
+  dpost: async id => {
+    if (!confirm('Delete this post? The item stays in your catalog.')) return;
+    const { error } = await sb.from('marketplace_posts').delete().eq('id', id); if (error) return toast(error.message);
+    S.posts = S.posts.filter(p => p.id != id); drawList(); toast('Post deleted');
+  },
   cph: k => addFiles(k, true), cfl: k => addFiles(k, false), crm: (k, i) => { S[k].m.splice(+i, 1); drawMedia(k); },
   conn: id => toggleConn(id), sclose: closeSheet,
   post: async () => {

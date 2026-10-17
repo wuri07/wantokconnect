@@ -38,7 +38,8 @@ function live() {
   stopLive(); const me = S.user.id, ch = (n, table, event, filter, fn) => sb.channel(n).on('postgres_changes', { event, schema: 'public', table, ...(filter && { filter }) }, fn).subscribe();
   S.chs = [ch('wc-n', 'notifications', 'INSERT', `user_id=eq.${me}`, p => { S.unreadN++; badges(); toast(p.new.message); }),
     ch('wc-m', 'direct_messages', 'INSERT', `recipient_id=eq.${me}`, p => onNewMessage(p.new)),
-    ch('wc-s', 'sme_products', 'UPDATE', null, p => stockUpdate(p.new))];
+    ch('wc-s', 'sme_products', 'UPDATE', null, p => stockUpdate(p.new)),
+    ch('wc-p', 'marketplace_posts', 'DELETE', null, p => { S.posts = S.posts.filter(x => x.id !== p.old.id); if (S.view.t === 'feed') drawList(); })];
 }
 async function route() {
   if (!S.user) return; const [, t, id] = location.hash.split('/'); closeSheet();

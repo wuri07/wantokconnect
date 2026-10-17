@@ -62,7 +62,7 @@ export const profileActions = {
   gdel: id => run(async () => { const { error } = await sb.from('storefront_photos').delete().eq('id', id); if (error) throw error; redo(); }),
   // Flipping this updates sme_products; a database trigger notifies connected customers and Realtime refreshes every open feed.
   stock: id => run(async () => { const p = cache.prods.find(x => x.id == id); const { error } = await sb.from('sme_products').update({ is_in_stock: !p.is_in_stock }).eq('id', id); if (error) throw error; redo(); }),
-  pdel: id => run(async () => { if (!confirm('Remove this item from your catalog?')) return; const { error } = await sb.from('sme_products').delete().eq('id', id); if (error) throw error; redo(); }),
+  pdel: id => run(async () => { if (!confirm('Remove this item from your catalog? Its posts in the feed will be removed too.')) return; await sb.from('marketplace_posts').delete().eq('product_id', id); const { error } = await sb.from('sme_products').delete().eq('id', id); if (error) throw error; S.posts = S.posts.filter(p => p.product_id != id); redo(); }),
   npph: () => run(async () => { const [f] = await pick('image/*'); if (!f) return; npImg = f; $('#npv').textContent = 'Photo ready: ' + f.name; }),
   padd: () => run(async () => {
     const er = $('#per'), name = val('#pn1'), d = val('#pd1'), price = parseFloat($('#pp1').value);
