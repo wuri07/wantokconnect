@@ -44,7 +44,7 @@ export async function loadFeed(reset = true) {
   if (error) return toast(error.message);
   S.posts = reset ? data : [...S.posts, ...data]; S.more = data.length === PAGE; drawList();
 }
-export function renderFeedView() { $('#app').innerHTML = `<div id="cmp">${composer()}</div><div id="cnt"></div><div id="list"></div>`; drawMedia('cp'); drawList(); }
+export function renderFeedView() { $('#app').className = 'wrap'; $('#app').innerHTML = `<div id="cmp">${composer()}</div><div id="cnt"></div><div id="list"></div>`; drawMedia('cp'); drawList(); }
 export function drawList() {
   const l = $('#list'); if (!l) return; const f = S.f, any = f.reg || f.prov || f.cat || S.q;
   $('#cnt').innerHTML = `<div class="count"><span>${S.posts.length}${S.more ? '+' : ''} listing${S.posts.length === 1 ? '' : 's'}${S.q ? ' for "' + esc(S.q) + '"' : ''}</span>${any ? '<button data-a="fclear">Clear filters</button>' : ''}</div>`;

@@ -5,11 +5,11 @@ import { vbadge, stockBadge, priceTxt, toggleConn, openPostSheet } from './feed.
 const catOpts = () => S.ref.cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
 const provOpts = () => S.ref.regions.map(r => `<optgroup label="${esc(r.name)}">${S.ref.provinces.filter(p => p.region_id === r.id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
 const cityOpts = prov => '<option value="">No city hub</option>' + S.ref.cities.filter(c => !prov || c.province_id == prov).map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
-const sec = (t, h) => `<section class="sec"><h2>${t}</h2>${h}</section>`;
+const sec = (t, h) => `<section class="sec s-${t.toLowerCase().replace(/[^a-z]+/g, '-')}"><h2>${t}</h2>${h}</section>`;
 let cache = {};
 
 export async function renderProfile(id) {
-  const app = $('#app'); app.innerHTML = '<p class="pad muted">Loading...</p>';
+  const app = $('#app'); app.className = 'wrap pgrid'; app.innerHTML = '<p class="pad muted">Loading...</p>';
   const [{ data: u }, { data: cnt }] = await Promise.all([sb.from('users').select('*').eq('id', id).maybeSingle(), sb.rpc('connection_count', { p_user: id })]);
   if (!u) { app.innerHTML = '<p class="pad muted">Profile not found.</p>'; return; }
   const own = id === S.user.id, sme = u.account_type === 'sme_owner'; let locs = [], photos = [], prods = [];
