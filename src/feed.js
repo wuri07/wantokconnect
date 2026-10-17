@@ -3,7 +3,7 @@ import { S, $, esc, kb, ago, toast, waLink, avatar, pick, uploadMedia, openSheet
 
 const PAGE = 20, MAXM = 10;
 export const vbadge = '<span class="vb">Physical Storefront Verified</span>';
-export const stockBadge = i => i ? '<span class="st in">In Stock</span>' : '<span class="st out">Out of Stock</span>';
+export const stockBadge = i => i ? '<span class="st yes">In Stock</span>' : '<span class="st out">Out of Stock</span>';
 export const priceTxt = p => Number(p) > 0 ? 'K' + Number(p).toFixed(2) : 'Ask for price';
 const catOpts = () => S.ref.cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
 const locOpts = sel => S.myLocs.map(l => `<option value="${l.id}" ${l.id == sel ? 'selected' : ''}>${esc(locLabel(l))}</option>`).join('');
