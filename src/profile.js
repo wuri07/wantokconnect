@@ -1,6 +1,7 @@
 import { sb } from './supabase.js';
 import { S, $, esc, toast, avatar, pick, uploadOne, locLabel, waLink } from './ui.js';
 import { vbadge, stockBadge, priceTxt, toggleConn, openPostSheet } from './feed.js';
+import { openLightbox } from './lightbox.js';
 
 const catOpts = () => S.ref.cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
 const provOpts = () => S.ref.regions.map(r => `<optgroup label="${esc(r.name)}">${S.ref.provinces.filter(p => p.region_id === r.id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
@@ -30,26 +31,44 @@ export async function renderProfile(id) {
   if (!sme) return app.innerHTML = h + (own ? sec('Own a business?', `<p class="muted sm" style="margin-top:0">Switch to a business account to add locations, list products and post to the feed. This cannot be undone.</p>${btn('gold-o', 'Switch to a business account', 'tobiz')}`) : '') + sec('About', own ? `<textarea id="pbio" class="in" rows="3" maxlength="600" placeholder="Tell businesses about yourself">${esc(u.bio)}</textarea>${btn('red', 'Save', 'savep')}` : `<p class="muted sm" style="margin:0">${esc(u.bio) || 'No bio yet.'}</p>`);
   h += sec('Locations available', `<div class="row">${locs.map(l => `<span class="chip">${esc(locLabel(l))}${own && locs.length > 1 ? ` <button data-a="ldel|${l.id}" style="color:var(--red);padding-left:4px" aria-label="Remove location">&times;</button>` : ''}</span>`).join('') || '<span class="muted sm">No locations yet. Add one to start posting.</span>'}</div>
     ${own ? `<div class="grid2" style="margin-top:12px"><select id="lp" class="in" aria-label="Province">${provOpts()}</select><select id="lc" class="in" aria-label="City hub">${cityOpts(S.ref.provinces[0]?.id)}</select></div>${btn('gold-o', 'Add location', 'ladd')}` : ''}`);
-  h += sec('Storefront photos', `<div class="thumbs">${photos.map(p => `<div class="th"><img src="${esc(p.image_url)}" loading="lazy" alt="Storefront">${own ? `<button class="x" data-a="gdel|${p.id}" aria-label="Remove photo">&times;</button>` : ''}</div>`).join('')}</div>${photos.length ? '' : '<p class="muted sm" style="margin:0">No storefront photos yet.</p>'}${own ? `<div style="margin-top:12px">${btn('gold-o', 'Add photos', 'gadd')}</div>` : ''}`);
+  h += sec('Storefront photos', `<div class="thumbs">${photos.map((p, i) => `<div class="th"><img src="${esc(p.image_url)}" loading="lazy" alt="Storefront photo ${i + 1}. Tap to enlarge" role="button" tabindex="0" data-a="zoomph|${i}" class="zoomable">${own ? `<button class="x" data-a="gdel|${p.id}" aria-label="Remove photo">&times;</button>` : ''}</div>`).join('')}</div>${photos.length ? '' : '<p class="muted sm" style="margin:0">No storefront photos yet.</p>'}${own ? `<div style="margin-top:12px">${btn('gold-o', 'Add photos', 'gadd')}</div>` : ''}`);
   h += sec('Products and services', prods.map(p => `<div class="item"><div class="between" style="margin:0;align-items:flex-start"><div class="grow"><b class="sm">${esc(p.product_name)}</b><div class="sub">${priceTxt(p.price_kina)} &middot; ${esc(p.categories?.name || '')}</div></div>
     ${own ? `<button class="sw ${p.is_in_stock ? 'on' : ''}" data-a="stock|${p.id}" role="switch" aria-checked="${p.is_in_stock}" aria-label="In stock: ${esc(p.product_name)}"><span style="color:${p.is_in_stock ? 'var(--gold)' : 'var(--red)'}">${p.is_in_stock ? 'In Stock' : 'Out of Stock'}</span><i></i></button>` : stockBadge(p.is_in_stock)}</div>
-    ${p.media_url ? `<img src="${esc(p.media_url)}" loading="lazy" alt="">` : ''}<p class="muted sm" style="margin:8px 0 0">${esc(p.description)}</p><div class="tiny muted" style="margin-top:4px">Available: ${esc(p.business_locations ? locLabel(p.business_locations) : 'Ask the seller')}</div>
+    ${p.media_url ? `<img src="${esc(p.media_url)}" loading="lazy" alt="Tap to enlarge" role="button" tabindex="0" data-a="zoomprod|${p.id}" class="zoomable">` : ''}<p class="muted sm" style="margin:8px 0 0">${esc(p.description)}</p><div class="tiny muted" style="margin-top:4px">Available: ${esc(p.business_locations ? locLabel(p.business_locations) : 'Ask the seller')}</div>
     ${own ? `<div class="row" style="margin-top:12px;gap:16px">${btn('gold-o', 'Post', 'ppost|' + p.id)}<button class="tiny" style="color:var(--red)" data-a="pdel|${p.id}">Remove</button></div>` : ''}</div>`).join('') || '<p class="muted sm" style="margin:0">No products yet.</p>'
     + (own ? `<div style="margin-top:16px"><div class="b sm" style="margin-bottom:8px">Add a product or service</div><input id="pn1" class="in" maxlength="150" placeholder="Name"><div class="grid2"><select id="pc1" class="in" aria-label="Category">${catOpts()}</select><input id="pp1" class="in" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Price in K (optional)"></div><select id="pl1" class="in" aria-label="Location">${S.myLocs.map(l => `<option value="${l.id}">${esc(locLabel(l))}</option>`).join('')}</select><textarea id="pd1" class="in" rows="2" placeholder="Description"></textarea><div class="row">${btn('gold-o', 'Add photo', 'npph')}${btn('red', 'Add to catalog', 'padd')}</div><p class="tiny muted" id="npv"></p><p class="err" id="per"></p></div>` : ''));
-  h += sec('About and contact', own ? `<textarea id="pbio" class="in" rows="3" maxlength="600" placeholder="About your business">${esc(u.bio)}</textarea><input id="pwa" class="in" inputmode="tel" placeholder="WhatsApp number, e.g. +67572345678" value="${esc(u.whatsapp_number)}"><input id="pph" class="in" inputmode="tel" placeholder="Phone number" value="${esc(u.phone_number)}"><input id="pgm" class="in" type="email" placeholder="Gmail" value="${esc(u.gmail)}">${btn('red', 'Save', 'savep')}`
-    : `<p class="muted sm" style="margin:0;line-height:1.6">${esc(u.bio) || 'No description yet.'}</p><div style="margin-top:12px;display:grid;gap:8px" class="sm">${u.whatsapp_number ? `<a class="gold" target="_blank" rel="noopener" href="${esc(waLink(u.whatsapp_number, 'Hi'))}">WhatsApp: ${esc(u.whatsapp_number)}</a>` : ''}${u.phone_number ? `<a class="gold" href="tel:${esc(u.phone_number)}">Phone: ${esc(u.phone_number)}</a>` : ''}${u.gmail ? `<a class="gold" href="mailto:${esc(u.gmail)}">Gmail: ${esc(u.gmail)}</a>` : ''}</div>`);
+  h += sec('About and contact', own ? `<textarea id="pbio" class="in" rows="3" maxlength="600" placeholder="About your business">${esc(u.bio)}</textarea>${phoneField('pwa', 'WhatsApp number', 'Customers reach you here when they tap Arrange on WhatsApp.', u.whatsapp_number)}${phoneField('pph', 'Phone number (optional)', 'For people who prefer to call.', u.phone_number)}<input id="pgm" class="in" type="email" placeholder="Gmail" value="${esc(u.gmail)}">${btn('red', 'Save', 'savep')}`
+    : `<p class="muted sm" style="margin:0;line-height:1.6">${esc(u.bio) || 'No description yet.'}</p><div style="margin-top:12px;display:grid;gap:8px" class="sm">${u.whatsapp_number ? `<a class="gold" target="_blank" rel="noopener" href="${esc(waLink(u.whatsapp_number, 'Hi'))}">WhatsApp: ${esc(fmtPhone(u.whatsapp_number))}</a>` : ''}${u.phone_number ? `<a class="gold" href="tel:${esc(u.phone_number)}">Phone: ${esc(fmtPhone(u.phone_number))}</a>` : ''}${u.gmail ? `<a class="gold" href="mailto:${esc(u.gmail)}">Gmail: ${esc(u.gmail)}</a>` : ''}</div>`);
   app.innerHTML = h;
 }
 const val = id => ($(id)?.value || '').trim(), redo = () => renderProfile(S.view.id);
+// Phone numbers are saved as country code + number (for example +67572345678), chosen with a list instead of typed by hand.
+const CODES = [['+675', 'Papua New Guinea'], ['+61', 'Australia'], ['+64', 'New Zealand'], ['+679', 'Fiji'], ['+677', 'Solomon Islands'], ['+678', 'Vanuatu'], ['+65', 'Singapore'], ['+63', 'Philippines'], ['+62', 'Indonesia'], ['+44', 'United Kingdom'], ['+1', 'USA / Canada']];
+const splitPhone = v => {
+  const s = String(v || '').trim(); if (!s) return { code: '+675', num: '' };
+  const c = s[0] === '+' ? [...CODES].sort((a, b) => b[0].length - a[0].length).find(x => s.startsWith(x[0])) : null;
+  return c ? { code: c[0], num: s.slice(c[0].length).replace(/\D/g, '') } : { code: '+675', num: s.replace(/\D/g, '') };
+};
+const fmtPhone = v => { if (!v) return ''; const { code, num } = splitPhone(v); return code + ' ' + num.replace(/(\d{4})(?=\d)/g, '$1 '); };
+const phoneField = (id, label, hint, v) => { const { code, num } = splitPhone(v); return `<label class="sm" style="display:block;margin-bottom:8px">${label}<span class="tiny muted" style="display:block;margin:2px 0 6px">${hint}</span><span class="row" style="flex-wrap:nowrap"><select id="${id}c" class="in" style="width:auto;flex:none;max-width:48%;margin:0" aria-label="${label}: country code">${CODES.map(c => `<option value="${c[0]}" ${c[0] === code ? 'selected' : ''}>${c[0]} ${c[1]}</option>`).join('')}</select><input id="${id}" class="in" style="margin:0" inputmode="numeric" autocomplete="tel-national" maxlength="14" placeholder="7234 5678" value="${esc(num)}"></span></label>`; };
+const readPhone = (num, code) => {
+  const raw = val(num); if (!raw) return null;
+  if (/^(\+|00)/.test(raw)) throw new Error('Type only the number. Choose the country code from the list.');
+  const d = raw.replace(/\D/g, '').replace(/^0+/, '');
+  if (d.length < 6 || d.length > 12) throw new Error('Enter the number without the country code, for example 7234 5678');
+  return $(code).value + d;
+};
 let npImg = null;
 const run = async fn => { try { await fn(); } catch (e) { toast(e.message || 'Something went wrong'); } };
 
 export const profileActions = {
   back: () => { location.hash = '#/'; },
+  zoomph: i => openLightbox(cache.photos.map(p => p.image_url), +i),
+  zoomprod: id => { const p = cache.prods.find(x => x.id == id); if (p?.media_url) openLightbox([p.media_url], 0); },
   pic: () => run(async () => { const [f] = await pick('image/*'); if (!f) return; const r = await uploadOne('avatars', f, 256); const { error } = await sb.from('users').update({ profile_pic_url: r.url }).eq('id', S.user.id); if (error) throw error; S.user.profile_pic_url = r.url; redo(); }),
   savep: () => run(async () => {
     const row = {}; if ($('#pnm')) row.full_name = val('#pnm'); if ($('#pbio')) row.bio = val('#pbio') || null;
-    if ($('#pwa')) Object.assign(row, { whatsapp_number: val('#pwa') || null, phone_number: val('#pph') || null, gmail: val('#pgm') || null });
+    if ($('#pwa')) Object.assign(row, { whatsapp_number: readPhone('#pwa', '#pwac'), phone_number: readPhone('#pph', '#pphc'), gmail: val('#pgm') || null });
     if (row.full_name !== undefined && row.full_name.length < 2) throw new Error('Enter a name');
     const { error } = await sb.from('users').update(row).eq('id', S.user.id); if (error) throw new Error(/check constraint/i.test(error.message) ? 'Check your phone number (use digits, e.g. +67572345678) and email' : error.message);
     Object.assign(S.user, row); toast('Saved'); redo();

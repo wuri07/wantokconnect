@@ -7,6 +7,7 @@ import { feedActions, renderFeedView, loadFeed, focusPost, stockUpdate, drawList
 import { profileActions, renderProfile } from './profile.js';
 import { drawerActions, badges, refreshCounts, onNewMessage } from './drawer.js';
 import { initOffline } from './offline.js';
+import { lightboxActions } from './lightbox.js';
 
 // Landing from the link in the confirmation email: tell the person it worked (or expired), then clean the address bar.
 (() => {
@@ -15,7 +16,7 @@ import { initOffline } from './offline.js';
   else if (/access_token=|type=signup|type=email/.test(h)) { Object.assign(S.au, { screen: 'in', info: 'Email confirmed. Log in to continue.' }); history.replaceState(null, '', location.pathname); }
 })();
 
-const ACT = { ...authActions, ...filterActions, ...feedActions, ...profileActions, ...drawerActions };
+const ACT = { ...authActions, ...filterActions, ...feedActions, ...profileActions, ...drawerActions, ...lightboxActions };
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-a]'); if (!t) return;
   const [a, b, c] = t.dataset.a.split('|'), fn = ACT[a];
@@ -23,6 +24,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { $('#dr').hidden = true; closeSheet(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('img[data-a]')) { e.preventDefault(); e.target.click(); return; }
   if (e.key !== 'Enter') return;
   if (e.target.closest('#au')) ACT[{ in: 'ago', up: 'ago', forgot: 'asend', otp: 'averify', reset: 'areset' }[S.au.screen]]?.();
   if (e.target.id === 'ci') ACT.csend();

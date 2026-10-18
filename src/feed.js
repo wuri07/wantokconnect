@@ -1,4 +1,5 @@
 import { sb } from './supabase.js';
+import { openLightbox } from './lightbox.js';
 import { S, $, esc, kb, ago, toast, waLink, avatar, pick, uploadMedia, openSheet, closeSheet, locLabel } from './ui.js';
 
 const PAGE = 20, MAXM = 10;
@@ -56,7 +57,7 @@ function card(p) {
   return `<article class="post" data-pid="${p.id}"><button data-a="prof|${p.user_id}" aria-label="Open ${esc(p.author_name)}">${avatar(p.author_pic, p.author_name)}</button><div class="grow">
    <div class="between" style="margin:0;align-items:flex-start"><div class="grow"><button class="b" data-a="prof|${p.user_id}">${esc(p.author_name)}</button>${p.author_verified ? vbadge : ''}<div class="sub">${esc(p.location_label)}</div></div>
    ${mine ? `<button class="chip" style="border-color:var(--red);color:var(--red)" data-a="dpost|${p.id}" aria-label="Delete this post">Delete</button>` : `<button class="chip ${cn ? 'tag' : ''}" style="${cn ? '' : 'border-color:var(--red);color:var(--red)'}" data-a="conn|${p.user_id}">${cn ? 'Connected' : 'Connect'}</button>`}</div>
-   ${im.length ? `<div class="media ${im.length > 1 ? 'm2' : ''}">${im.map((x, i) => `<img src="${esc(x.url)}" loading="lazy" alt="" class="${im.length > 2 && im.length % 2 && i === 0 ? 'span' : ''}">`).join('')}</div>` : ''}
+   ${im.length ? `<div class="media ${im.length > 1 ? 'm2' : ''}">${im.map((x, i) => `<img src="${esc(x.url)}" loading="lazy" alt="Photo ${i + 1} of ${im.length}. Tap to enlarge" role="button" tabindex="0" data-a="zoom|${p.id}|${i}" class="zoomable ${im.length > 2 && im.length % 2 && i === 0 ? 'span' : ''}">`).join('')}</div>` : ''}
    ${fl.map(x => `<a class="file" href="${esc(x.url)}" target="_blank" rel="noopener"><i>FILE</i><span>${esc(x.name)}</span><span class="muted tiny" style="flex:none">${kb(x.size)}</span></a>`).join('')}
    <p style="white-space:pre-wrap;word-break:break-word;margin:12px 0 0">${esc(p.content)}</p>
    ${p.product_name ? `<div class="prod"><div class="grow"><div class="b sm">${esc(p.product_name)}</div><div class="sub">${priceTxt(p.price_kina)} &middot; ${esc(p.category_name || '')}</div></div>${stockBadge(p.is_in_stock)}</div>` : ''}
@@ -88,6 +89,7 @@ export function openPostSheet(pr) {
 
 export const feedActions = {
   more: () => loadFeed(false),
+  zoom: (pid, i) => { const p = S.posts.find(x => x.id == pid); if (p) openLightbox((p.media || []).filter(m => m.kind === 'image').map(m => m.url), +i); },
   // Delete one of your own posts. The item stays in your catalog so you can post it again later.
   dpost: async id => {
     if (!confirm('Delete this post? The item stays in your catalog.')) return;
