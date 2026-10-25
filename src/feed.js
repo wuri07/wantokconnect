@@ -1,5 +1,6 @@
 import { sb } from './supabase.js';
 import { openLightbox } from './lightbox.js';
+import { prefs } from './prefs.js';
 import { S, $, esc, kb, ago, toast, waLink, avatar, pick, uploadMedia, openSheet, closeSheet, locLabel } from './ui.js';
 
 const PAGE = 20, MAXM = 10;
@@ -56,13 +57,13 @@ function card(p) {
   const wa = waLink(p.author_whatsapp, `Hi, I saw ${p.product_name || 'your post'} on WantokConnect.`);
   return `<article class="post" data-pid="${p.id}"><button data-a="prof|${p.user_id}" aria-label="Open ${esc(p.author_name)}">${avatar(p.author_pic, p.author_name)}</button><div class="grow">
    <div class="between" style="margin:0;align-items:flex-start"><div class="grow"><button class="b" data-a="prof|${p.user_id}">${esc(p.author_name)}</button>${p.author_verified ? vbadge : ''}<div class="sub">${esc(p.location_label)}</div></div>
-   ${mine ? `<button class="chip" style="border-color:var(--red);color:var(--red)" data-a="dpost|${p.id}" aria-label="Delete this post">Delete</button>` : `<button class="chip ${cn ? 'tag' : ''}" style="${cn ? '' : 'border-color:var(--red);color:var(--red)'}" data-a="conn|${p.user_id}">${cn ? 'Connected' : 'Connect'}</button>`}</div>
-   ${im.length ? `<div class="media ${im.length > 1 ? 'm2' : ''}">${im.map((x, i) => `<img src="${esc(x.url)}" loading="lazy" alt="Photo ${i + 1} of ${im.length}. Tap to enlarge" role="button" tabindex="0" data-a="zoom|${p.id}|${i}" class="zoomable ${im.length > 2 && im.length % 2 && i === 0 ? 'span' : ''}">`).join('')}</div>` : ''}
+   ${mine ? `<button class="chip" style="border-color:var(--red);color:var(--red)" data-a="dpost|${p.id}" aria-label="Delete this post">Delete</button>` : `<button class="chip ${cn ? 'tag' : ''}" style="${cn ? '' : 'border-color:var(--primary);color:var(--primary)'}" data-a="conn|${p.user_id}">${cn ? 'Connected' : 'Connect'}</button>`}</div>
+   ${im.length && prefs.dataSaver && !S.shown.has(p.id) ? `<button class="saver" data-a="showph|${p.id}">Show ${im.length} photo${im.length > 1 ? 's' : ''} (uses data)</button>` : im.length ? `<div class="media ${im.length > 1 ? 'm2' : ''}">${im.map((x, i) => `<img src="${esc(x.url)}" loading="lazy" alt="Photo ${i + 1} of ${im.length}. Tap to enlarge" role="button" tabindex="0" data-a="zoom|${p.id}|${i}" class="zoomable ${im.length > 2 && im.length % 2 && i === 0 ? 'span' : ''}">`).join('')}</div>` : ''}
    ${fl.map(x => `<a class="file" href="${esc(x.url)}" target="_blank" rel="noopener"><i>FILE</i><span>${esc(x.name)}</span><span class="muted tiny" style="flex:none">${kb(x.size)}</span></a>`).join('')}
    <p style="white-space:pre-wrap;word-break:break-word;margin:12px 0 0">${esc(p.content)}</p>
    ${p.product_name ? `<div class="prod"><div class="grow"><div class="b sm">${esc(p.product_name)}</div><div class="sub">${priceTxt(p.price_kina)} &middot; ${esc(p.category_name || '')}</div></div>${stockBadge(p.is_in_stock)}</div>` : ''}
    ${mine ? '' : `<div class="row" style="margin-top:12px">${wa ? `<a class="btn red" style="flex:1" href="${esc(wa)}" target="_blank" rel="noopener">Arrange on WhatsApp</a>` : '<span class="tiny muted" style="flex:1">This business has not added a WhatsApp number yet.</span>'}<button class="btn gold-o" data-a="msg|${p.user_id}">Message</button></div>`}
-   <div class="tiny muted" style="margin-top:8px">${ago(p.created_at)} ago</div></div></article>`;
+   <div class="between" style="margin-top:8px"><span class="tiny muted">${ago(p.created_at)} ago</span><button class="chip" data-a="share|post|${p.id}" aria-label="Share this listing">Share</button></div></div></article>`;
 }
 // Deep link: scroll to a post and highlight it, fetching it if it is not on the first page.
 export async function focusPost(id) {
@@ -89,6 +90,7 @@ export function openPostSheet(pr) {
 
 export const feedActions = {
   more: () => loadFeed(false),
+  showph: id => { S.shown.add(+id); drawList(); },
   zoom: (pid, i) => { const p = S.posts.find(x => x.id == pid); if (p) openLightbox((p.media || []).filter(m => m.kind === 'image').map(m => m.url), +i); },
   // Delete one of your own posts. The item stays in your catalog so you can post it again later.
   dpost: async id => {

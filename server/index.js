@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { pool } from './db.js';
 import { rateLimit } from './auth.js';
 import { admin } from './routes/admin.js';
+import { share } from './routes/share.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, '../dist');
@@ -20,8 +21,10 @@ app.get('/api/health', async (_req, res) => {
 });
 app.use('/api/admin', rateLimit(60, 60_000), admin);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
+app.use(rateLimit(120, 60_000), share);      // /p/:id and /i/:id share links with previews
 
 if (!fs.existsSync(path.join(dist, 'index.html'))) console.error('dist/index.html not found. Run "npm run build" before "npm start".');
+app.use('/.well-known', express.static(path.join(dist, '.well-known'), { dotfiles: 'allow' }));   // Android app link verification (assetlinks.json)
 app.use(express.static(dist, { maxAge: '1h', index: false }));
 app.get('/sw.js', (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(dist, 'sw.js')));
 app.get('*', (_req, res) => {

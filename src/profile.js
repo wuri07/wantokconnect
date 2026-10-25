@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { S, $, esc, toast, avatar, pick, uploadOne, locLabel, waLink } from './ui.js';
-import { vbadge, stockBadge, priceTxt, toggleConn, openPostSheet } from './feed.js';
+import { vbadge, stockBadge, priceTxt, toggleConn } from './feed.js';
 import { openLightbox } from './lightbox.js';
 
 const catOpts = () => S.ref.cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
@@ -32,11 +32,7 @@ export async function renderProfile(id) {
   h += sec('Locations available', `<div class="row">${locs.map(l => `<span class="chip">${esc(locLabel(l))}${own && locs.length > 1 ? ` <button data-a="ldel|${l.id}" style="color:var(--red);padding-left:4px" aria-label="Remove location">&times;</button>` : ''}</span>`).join('') || '<span class="muted sm">No locations yet. Add one to start posting.</span>'}</div>
     ${own ? `<div class="grid2" style="margin-top:12px"><select id="lp" class="in" aria-label="Province">${provOpts()}</select><select id="lc" class="in" aria-label="City hub">${cityOpts(S.ref.provinces[0]?.id)}</select></div>${btn('gold-o', 'Add location', 'ladd')}` : ''}`);
   h += sec('Storefront photos', `<div class="thumbs">${photos.map((p, i) => `<div class="th"><img src="${esc(p.image_url)}" loading="lazy" alt="Storefront photo ${i + 1}. Tap to enlarge" role="button" tabindex="0" data-a="zoomph|${i}" class="zoomable">${own ? `<button class="x" data-a="gdel|${p.id}" aria-label="Remove photo">&times;</button>` : ''}</div>`).join('')}</div>${photos.length ? '' : '<p class="muted sm" style="margin:0">No storefront photos yet.</p>'}${own ? `<div style="margin-top:12px">${btn('gold-o', 'Add photos', 'gadd')}</div>` : ''}`);
-  h += sec('Products and services', prods.map(p => `<div class="item"><div class="between" style="margin:0;align-items:flex-start"><div class="grow"><b class="sm">${esc(p.product_name)}</b><div class="sub">${priceTxt(p.price_kina)} &middot; ${esc(p.categories?.name || '')}</div></div>
-    ${own ? `<button class="sw ${p.is_in_stock ? 'on' : ''}" data-a="stock|${p.id}" role="switch" aria-checked="${p.is_in_stock}" aria-label="In stock: ${esc(p.product_name)}"><span style="color:${p.is_in_stock ? 'var(--gold)' : 'var(--red)'}">${p.is_in_stock ? 'In Stock' : 'Out of Stock'}</span><i></i></button>` : stockBadge(p.is_in_stock)}</div>
-    ${p.media_url ? `<img src="${esc(p.media_url)}" loading="lazy" alt="Tap to enlarge" role="button" tabindex="0" data-a="zoomprod|${p.id}" class="zoomable">` : ''}<p class="muted sm" style="margin:8px 0 0">${esc(p.description)}</p><div class="tiny muted" style="margin-top:4px">Available: ${esc(p.business_locations ? locLabel(p.business_locations) : 'Ask the seller')}</div>
-    ${own ? `<div class="row" style="margin-top:12px;gap:16px">${btn('gold-o', 'Post', 'ppost|' + p.id)}<button class="tiny" style="color:var(--red)" data-a="pdel|${p.id}">Remove</button></div>` : ''}</div>`).join('') || '<p class="muted sm" style="margin:0">No products yet.</p>'
-    + (own ? `<div style="margin-top:16px"><div class="b sm" style="margin-bottom:8px">Add a product or service</div><input id="pn1" class="in" maxlength="150" placeholder="Name"><div class="grid2"><select id="pc1" class="in" aria-label="Category">${catOpts()}</select><input id="pp1" class="in" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Price in K (optional)"></div><select id="pl1" class="in" aria-label="Location">${S.myLocs.map(l => `<option value="${l.id}">${esc(locLabel(l))}</option>`).join('')}</select><textarea id="pd1" class="in" rows="2" placeholder="Description"></textarea><div class="row">${btn('gold-o', 'Add photo', 'npph')}${btn('red', 'Add to catalog', 'padd')}</div><p class="tiny muted" id="npv"></p><p class="err" id="per"></p></div>` : ''));
+  h += sec('Products and services', `<div class="cprev">${prods.slice(0, 4).map(p => `<button class="ctile" data-a="catalog|${id}|${p.id}" aria-label="Open ${esc(p.product_name)} in the catalog">${p.media_url ? `<img src="${esc(p.media_url)}" loading="lazy" alt="">` : `<span class="cph">${esc(p.product_name[0])}</span>`}<span class="cn">${esc(p.product_name)}</span><span class="cp">${priceTxt(p.price_kina)}</span>${stockBadge(p.is_in_stock)}</button>`).join('')}</div>${prods.length ? '' : '<p class="muted sm" style="margin:0 0 12px">No products yet.</p>'}<button class="btn gold-o full" data-a="catalog|${id}">${own ? 'Open my catalog' : 'Open catalog'} (${prods.length})</button>`);
   h += sec('About and contact', own ? `<textarea id="pbio" class="in" rows="3" maxlength="600" placeholder="About your business">${esc(u.bio)}</textarea>${phoneField('pwa', 'WhatsApp number', 'Customers reach you here when they tap Arrange on WhatsApp.', u.whatsapp_number)}${phoneField('pph', 'Phone number (optional)', 'For people who prefer to call.', u.phone_number)}<input id="pgm" class="in" type="email" placeholder="Gmail" value="${esc(u.gmail)}">${btn('red', 'Save', 'savep')}`
     : `<p class="muted sm" style="margin:0;line-height:1.6">${esc(u.bio) || 'No description yet.'}</p><div style="margin-top:12px;display:grid;gap:8px" class="sm">${u.whatsapp_number ? `<a class="gold" target="_blank" rel="noopener" href="${esc(waLink(u.whatsapp_number, 'Hi'))}">WhatsApp: ${esc(fmtPhone(u.whatsapp_number))}</a>` : ''}${u.phone_number ? `<a class="gold" href="tel:${esc(u.phone_number)}">Phone: ${esc(fmtPhone(u.phone_number))}</a>` : ''}${u.gmail ? `<a class="gold" href="mailto:${esc(u.gmail)}">Gmail: ${esc(u.gmail)}</a>` : ''}</div>`);
   app.innerHTML = h;
@@ -58,13 +54,11 @@ const readPhone = (num, code) => {
   if (d.length < 6 || d.length > 12) throw new Error('Enter the number without the country code, for example 7234 5678');
   return $(code).value + d;
 };
-let npImg = null;
 const run = async fn => { try { await fn(); } catch (e) { toast(e.message || 'Something went wrong'); } };
 
 export const profileActions = {
   back: () => { location.hash = '#/'; },
   zoomph: i => openLightbox(cache.photos.map(p => p.image_url), +i),
-  zoomprod: id => { const p = cache.prods.find(x => x.id == id); if (p?.media_url) openLightbox([p.media_url], 0); },
   pic: () => run(async () => { const [f] = await pick('image/*'); if (!f) return; const r = await uploadOne('avatars', f, 256); const { error } = await sb.from('users').update({ profile_pic_url: r.url }).eq('id', S.user.id); if (error) throw error; S.user.profile_pic_url = r.url; redo(); }),
   savep: () => run(async () => {
     const row = {}; if ($('#pnm')) row.full_name = val('#pnm'); if ($('#pbio')) row.bio = val('#pbio') || null;
@@ -80,17 +74,6 @@ export const profileActions = {
   gadd: () => run(async () => { const fs = await pick('image/*', true); for (const f of fs) { const r = await uploadOne('storefronts', f, 1024); const { error } = await sb.from('storefront_photos').insert({ user_id: S.user.id, image_url: r.url }); if (error) throw error; } redo(); }),
   gdel: id => run(async () => { const { error } = await sb.from('storefront_photos').delete().eq('id', id); if (error) throw error; redo(); }),
   // Flipping this updates sme_products; a database trigger notifies connected customers and Realtime refreshes every open feed.
-  stock: id => run(async () => { const p = cache.prods.find(x => x.id == id); const { error } = await sb.from('sme_products').update({ is_in_stock: !p.is_in_stock }).eq('id', id); if (error) throw error; redo(); }),
-  pdel: id => run(async () => { if (!confirm('Remove this item from your catalog? Its posts in the feed will be removed too.')) return; await sb.from('marketplace_posts').delete().eq('product_id', id); const { error } = await sb.from('sme_products').delete().eq('id', id); if (error) throw error; S.posts = S.posts.filter(p => p.product_id != id); redo(); }),
-  npph: () => run(async () => { const [f] = await pick('image/*'); if (!f) return; npImg = f; $('#npv').textContent = 'Photo ready: ' + f.name; }),
-  padd: () => run(async () => {
-    const er = $('#per'), name = val('#pn1'), d = val('#pd1'), price = parseFloat($('#pp1').value);
-    if (!name) return er.textContent = 'Enter a name.'; if (d.length < 5) return er.textContent = 'Add a short description.'; if (!$('#pl1').value) return er.textContent = 'Add a location first.';
-    const img = npImg ? await uploadOne('post-media', npImg, 1024) : null;
-    const { error } = await sb.from('sme_products').insert({ user_id: S.user.id, product_name: name, description: d, category_id: +$('#pc1').value, price_kina: price >= 0 ? price : null, location_id: +$('#pl1').value, media_url: img?.url || null });
-    if (error) throw error; npImg = null; redo();
-  }),
-  ppost: id => { const p = cache.prods.find(x => x.id == id); if (p) openPostSheet(p); },
 };
 profileActions.conn = id => toggleConn(id);
 document.addEventListener('change', e => { if (e.target.id === 'lp') $('#lc').innerHTML = cityOpts(e.target.value); });

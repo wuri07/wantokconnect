@@ -8,6 +8,11 @@ import { profileActions, renderProfile } from './profile.js';
 import { drawerActions, badges, refreshCounts, onNewMessage } from './drawer.js';
 import { initOffline } from './offline.js';
 import { lightboxActions } from './lightbox.js';
+import { catalogActions, renderCatalog } from './catalog.js';
+import { peopleActions, renderPeople, drawPeople } from './people.js';
+import { settingsActions, renderSettings } from './settings.js';
+import { shareActions } from './share.js';
+import { prefs } from './prefs.js';
 
 // Landing from the link in the confirmation email: tell the person it worked (or expired), then clean the address bar.
 (() => {
@@ -16,7 +21,7 @@ import { lightboxActions } from './lightbox.js';
   else if (/access_token=|type=signup|type=email/.test(h)) { Object.assign(S.au, { screen: 'in', info: 'Email confirmed. Log in to continue.' }); history.replaceState(null, '', location.pathname); }
 })();
 
-const ACT = { ...authActions, ...filterActions, ...feedActions, ...profileActions, ...drawerActions, ...lightboxActions };
+const ACT = { ...authActions, ...filterActions, ...feedActions, ...profileActions, ...drawerActions, ...lightboxActions, ...catalogActions, ...peopleActions, ...settingsActions, ...shareActions };
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-a]'); if (!t) return;
   const [a, b, c] = t.dataset.a.split('|'), fn = ACT[a];
@@ -38,14 +43,17 @@ function stopLive() { S.chs.forEach(c => sb.removeChannel(c)); S.chs = []; }
 // Realtime: live stock badges, new-notification alerts and incoming messages.
 function live() {
   stopLive(); const me = S.user.id, ch = (n, table, event, filter, fn) => sb.channel(n).on('postgres_changes', { event, schema: 'public', table, ...(filter && { filter }) }, fn).subscribe();
-  S.chs = [ch('wc-n', 'notifications', 'INSERT', `user_id=eq.${me}`, p => { S.unreadN++; badges(); toast(p.new.message); }),
+  S.chs = [ch('wc-n', 'notifications', 'INSERT', `user_id=eq.${me}`, p => { S.unreadN++; badges(); if (prefs.popups) toast(p.new.message); }),
     ch('wc-m', 'direct_messages', 'INSERT', `recipient_id=eq.${me}`, p => onNewMessage(p.new)),
     ch('wc-s', 'sme_products', 'UPDATE', null, p => stockUpdate(p.new)),
     ch('wc-p', 'marketplace_posts', 'DELETE', null, p => { S.posts = S.posts.filter(x => x.id !== p.old.id); if (S.view.t === 'feed') drawList(); })];
 }
 async function route() {
-  if (!S.user) return; const [, t, id] = location.hash.split('/'); closeSheet();
+  if (!S.user) return; const [, t, id, extra] = location.hash.split('/'); closeSheet();
   if (t === 'profile' && id) { S.view = { t: 'profile', id }; drawFilter(); await renderProfile(id); scrollTo(0, 0); }
+  else if (t === 'catalog' && id) { S.view = { t: 'catalog', id }; drawFilter(); await renderCatalog(id, extra); if (!extra) scrollTo(0, 0); }
+  else if (t === 'people') { S.view = { t: 'people' }; drawFilter(); await renderPeople(); scrollTo(0, 0); }
+  else if (t === 'settings') { S.view = { t: 'settings' }; drawFilter(); await renderSettings(); scrollTo(0, 0); }
   else {
     S.view = { t: 'feed' }; if (t === 'post' && id) { S.f = { reg: '', prov: '', cat: '' }; S.q = ''; }
     drawFilter(); renderFeedView(); if (t === 'post' && id) await focusPost(id); else await loadFeed(true);
@@ -63,7 +71,7 @@ async function boot(session) {
   S.conn = new Set((c.data || []).map(x => x.following_id)); S.myLocs = l.data || [];
   await refreshCounts(); $('#au').hidden = true; live(); initOffline(); await route();
 }
-S.refresh = () => S.view.t === 'feed' ? drawList() : renderProfile(S.view.id);
+S.refresh = () => S.view.t === 'feed' ? drawList() : S.view.t === 'profile' ? renderProfile(S.view.id) : S.view.t === 'people' ? drawPeople() : S.view.t === 'catalog' ? renderCatalog(S.view.id) : undefined;
 sb.auth.onAuthStateChange((ev, session) => {
   if (ev === 'TOKEN_REFRESHED' || ev === 'USER_UPDATED') return;
   if (ev === 'SIGNED_IN' && session && S.user?.id === session.user.id) return;

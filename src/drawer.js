@@ -1,5 +1,6 @@
 import { sb } from './supabase.js';
 import { S, $, esc, ago, toast, avatar, openSheet, closeSheet, waLink } from './ui.js';
+import { prefs } from './prefs.js';
 
 export const badges = () => { const b = $('#bc'); b.textContent = S.unreadN; b.hidden = !S.unreadN; $('#mb').classList.toggle('glow', S.unreadM > 0); };
 export async function refreshCounts() {
@@ -9,6 +10,7 @@ export async function refreshCounts() {
   S.unreadN = n.count || 0; S.unreadM = m.count || 0; badges();
 }
 const pill = n => n ? `<span class="pill">${n}</span>` : '';
+const linkify = s => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;word-break:break-all">$1</a>');
 const row = (a, t, r = '', c = '') => `<button class="dr ${c}" data-a="${a}"><span>${t}</span><span class="muted sm">${r}</span></button>`;
 const go = h => { closeDrawer(); if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 export const closeDrawer = () => { $('#dr').hidden = true; };
@@ -32,7 +34,7 @@ function fbHtml() {
 export function drawDrawer() {
   const home = S.dv === 'home'; let b = '';
   if (home) b = `<div class="row" style="gap:12px;flex-wrap:nowrap;margin-bottom:24px">${avatar(S.user.profile_pic_url, S.user.full_name, 'sm')}<div class="grow"><b style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(S.user.full_name)}</b><span class="sub">${S.user.account_type === 'sme_owner' ? 'Business owner' : 'Customer'}</span></div></div>
-    ${row('home', 'General Feed / Marketplace')}${row('prof|' + S.user.id, 'Your Profile')}${row('dv|notif', 'Notifications', pill(S.unreadN))}${row('dv|msg', 'Inboxes / Messages', pill(S.unreadM))}${row('dv|fb', 'Feedback Center')}${row('logout', 'Log out', '', 'red-t')}`;
+    ${row('home', 'General Feed / Marketplace')}${row('prof|' + S.user.id, 'Your Profile')}${row('nav|#/people', 'Find People')}${row('dv|notif', 'Notifications', pill(S.unreadN))}${row('dv|msg', 'Inboxes / Messages', pill(S.unreadM))}${row('dv|fb', 'Feedback Center')}${row('nav|#/settings', 'Settings')}${row('logout', 'Log out', '', 'red-t')}`;
   else if (S.dv === 'notif') b = `<div class="between" style="margin:0 0 20px"><h2 class="dt" style="margin:0">Notifications</h2><button class="gold sm" data-a="readall" style="padding:8px">Mark all read</button></div>`
     + (S.notifs.map(n => `<button class="nrow" data-a="nopen|${n.id}"><span class="dot ${n.is_read ? '' : 'u'}"></span><span class="grow"><span class="sm" style="display:block">${esc(n.message)}</span><span class="tiny muted" style="display:block;margin-top:4px">${ago(n.created_at)} ago &middot; Tap to open the post</span></span></button>`).join('') || '<p class="muted sm">Nothing new. Connect with businesses to hear about new products and stock.</p>');
   else if (S.dv === 'msg') b = '<h2 class="dt">Inboxes / Messages</h2>' + (S.threads.map(t => `<button class="nrow" data-a="msg|${t.peer}" style="align-items:center">${avatar(t.user.profile_pic_url, t.user.full_name, 'sm')}<span class="grow"><b class="sm" style="display:block">${esc(t.user.full_name)}</b><span class="sub" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.last.sender_id === S.user.id ? 'You: ' : ''}${esc(t.last.body)}</span></span>${pill(t.unread)}</button>`).join('') || '<p class="muted sm">No messages yet. Tap Message on a business.</p>');
@@ -44,7 +46,7 @@ async function openDrawer(v) { S.dv = v; if (v === 'notif') await loadNotifs(); 
 /* ---------- chat sheet with WhatsApp hand-off ---------- */
 function drawChat() {
   const c = S.chat; if (!c || !$('#ms')) return; const mine = [...c.msgs].reverse().find(m => m.sender_id === S.user.id), wa = waLink(c.user.whatsapp_number || c.user.phone_number, mine ? mine.body : 'Hi, I found you on WantokConnect.');
-  $('#ms').innerHTML = c.msgs.map(m => `<div class="bub ${m.sender_id === S.user.id ? 'me' : ''}">${esc(m.body)}</div>`).join('') || '<p class="muted sm">Say hello.</p>'; $('#ms').scrollTop = 9e9;
+  $('#ms').innerHTML = c.msgs.map(m => `<div class="bub ${m.sender_id === S.user.id ? 'me' : ''}">${linkify(esc(m.body))}</div>`).join('') || '<p class="muted sm">Say hello.</p>'; $('#ms').scrollTop = 9e9;
   $('#cwa').hidden = !wa; if (wa) $('#cwa').href = wa;
 }
 export async function openChat(peer) {
@@ -60,7 +62,7 @@ export async function openChat(peer) {
 }
 export function onNewMessage(m) {
   if (S.chat && S.chat.peer === m.sender_id) { S.chat.msgs.push(m); drawChat(); sb.from('direct_messages').update({ read_at: new Date().toISOString() }).eq('id', m.id).then(() => {}); }
-  else { S.unreadM++; badges(); toast('New message'); }
+  else { S.unreadM++; badges(); if (prefs.popups) toast('New message'); }
 }
 
 export const drawerActions = {

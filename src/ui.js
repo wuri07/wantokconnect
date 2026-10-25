@@ -4,7 +4,7 @@ export const S = {
   user: null, ref: { regions: [], provinces: [], cities: [], cats: [] },
   f: { reg: '', prov: '', cat: '' }, q: '', fo: false, posts: [], more: false,
   view: { t: 'feed' }, dv: 'home', notifs: [], threads: [], unreadN: 0, unreadM: 0,
-  conn: new Set(), myLocs: [], cp: { m: [] }, pp: { m: [] }, chat: null, fb: { rate: 0, sales: '', exp: '', imp: '', done: false },
+  conn: new Set(), shown: new Set(), items: new Map(), share: null, myLocs: [], cp: { m: [] }, pp: { m: [] }, chat: null, fb: { rate: 0, sales: '', exp: '', imp: '', done: false },
   recovering: false, chs: [], refresh: () => {},
   au: { screen: 'in', role: '', name: '', email: '', pw: '', pw2: '', code: '', err: '', info: '', busy: false, cool: 0 },
 };
