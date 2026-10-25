@@ -34,7 +34,7 @@ export function drawAuth() {
   else body = `<h2 style="margin:0">Choose a new password</h2>
     ${f('apw', 'password', 'New password (8+ characters)', a.pw, 'autocomplete="new-password"')}${f('apw2', 'password', 'Confirm new password', a.pw2, 'autocomplete="new-password"')}
     <button class="btn red full" data-a="areset" ${dis}>${a.busy ? 'Saving...' : 'Save password'}</button>`;
-  $('#au').innerHTML = `<div class="auw">${head}<p class="muted sm" style="margin:0">Free for everyone in Papua New Guinea.</p>${body}${a.info ? `<p class="ok">${esc(a.info)}</p>` : ''}<p class="err" role="alert">${esc(a.err)}</p></div>`;
+  $('#au').innerHTML = `<div class="auw">${head}<p class="muted sm" style="margin:0">PNG's very own online SME marketplace</p>${body}${a.info ? `<p class="ok">${esc(a.info)}</p>` : ''}<p class="err" role="alert">${esc(a.err)}</p></div>`;
 }
 
 export const authActions = {
